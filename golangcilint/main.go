@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	_ "embed"
+	"fmt"
+	"strings"
 
 	"dagger/golangcilint/internal/dagger"
 )
@@ -16,13 +18,23 @@ var defaultConfig string
 
 type Golangcilint struct {
 	// Source is the Go source directory to lint.
+	//
+	// +private
 	Source *dagger.Directory
 
 	// Config is an optional golangci-lint configuration file.
 	// When provided it overrides the opinionated default config that ships
 	// with this module.
-	// +optional
+	//
+	// +private
 	Config *dagger.File
+
+	// EnvVars is an optional list of environment variables to set in the
+	// lint container. Each entry must be in "KEY=VALUE" format.
+	// This is useful for build-time variables like GOEXPERIMENT.
+	//
+	// +private
+	EnvVars []string
 }
 
 // New creates a new Golangcilint module instance.
@@ -34,26 +46,42 @@ func New(
 	// replaces the built-in opinionated defaults.
 	// +optional
 	config *dagger.File,
+
+	// Optional environment variables to set in the lint container.
+	// Each entry must be in "KEY=VALUE" format (e.g. "GOEXPERIMENT=rangefunc").
+	// +optional
+	envVars []string,
 ) *Golangcilint {
 	return &Golangcilint{
-		Source: source,
-		Config: config,
+		Source:  source,
+		Config:  config,
+		EnvVars: envVars,
 	}
 }
 
 // Lint runs golangci-lint on the source directory with --fix, applying
 // auto-fixes where possible, and returns the directory with fixes applied.
-func (m *Golangcilint) Lint() *dagger.Directory {
-	return m.lintContainer().
+func (m *Golangcilint) Lint() (*dagger.Directory, error) {
+	ctr, err := m.lintContainer()
+	if err != nil {
+		return nil, fmt.Errorf("could not create lint container: %w", err)
+	}
+
+	return ctr.
 		WithExec(m.buildArgs("--fix")).
-		Directory("/src")
+		Directory("/src"), nil
 }
 
 // Check runs golangci-lint on the source directory without applying fixes.
 // It returns the linter output as a string. If there are lint violations the
 // Dagger pipeline will fail, making this suitable for CI checks.
 func (m *Golangcilint) Check(ctx context.Context) (string, error) {
-	return m.lintContainer().
+	ctr, err := m.lintContainer()
+	if err != nil {
+		return "", fmt.Errorf("could not create lint container: %w", err)
+	}
+
+	return ctr.
 		WithExec(m.buildArgs()).
 		Stdout(ctx)
 }
@@ -69,7 +97,7 @@ func (m *Golangcilint) buildArgs(extra ...string) []string {
 
 // lintContainer returns a container configured for running golangci-lint
 // with Go module and build caches, and the config file mounted.
-func (m *Golangcilint) lintContainer() *dagger.Container {
+func (m *Golangcilint) lintContainer() (*dagger.Container, error) {
 	ctr := dag.Container().
 		From(golangciLintImage).
 		WithMountedCache("/go/pkg/mod", dag.CacheVolume("go-mod")).
@@ -85,5 +113,14 @@ func (m *Golangcilint) lintContainer() *dagger.Container {
 		ctr = ctr.WithNewFile("/src/.golangci.yml", defaultConfig)
 	}
 
-	return ctr
+	// Apply caller-provided environment variables.
+	for _, env := range m.EnvVars {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 || parts[0] == "" {
+			return nil, fmt.Errorf("invalid env var %q: must be in KEY=VALUE format", env)
+		}
+		ctr = ctr.WithEnvVariable(parts[0], parts[1])
+	}
+
+	return ctr, nil
 }
