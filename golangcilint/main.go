@@ -35,6 +35,14 @@ type Golangcilint struct {
 	//
 	// +private
 	EnvVars []string
+
+	// BaseCtr is an optional base container with golangci-lint already installed.
+	// When provided it replaces the default golangci-lint image, allowing
+	// callers to supply extra system libraries or tooling (e.g. sqlite-dev).
+	// The container must have golangci-lint on PATH.
+	//
+	// +private
+	BaseCtr *dagger.Container
 }
 
 // New creates a new Golangcilint module instance.
@@ -51,11 +59,19 @@ func New(
 	// Each entry must be in "KEY=VALUE" format (e.g. "GOEXPERIMENT=rangefunc").
 	// +optional
 	envVars []string,
+
+	// Optional base container with golangci-lint already installed.
+	// When provided it replaces the default golangci-lint image, allowing
+	// callers to supply extra system libraries or tooling (e.g. sqlite-dev).
+	// The container must have golangci-lint on PATH.
+	// +optional
+	baseCtr *dagger.Container,
 ) *Golangcilint {
 	return &Golangcilint{
 		Source:  source,
 		Config:  config,
 		EnvVars: envVars,
+		BaseCtr: baseCtr,
 	}
 }
 
@@ -98,8 +114,14 @@ func (m *Golangcilint) buildArgs(extra ...string) []string {
 // lintContainer returns a container configured for running golangci-lint
 // with Go module and build caches, and the config file mounted.
 func (m *Golangcilint) lintContainer() (*dagger.Container, error) {
-	ctr := dag.Container().
-		From(golangciLintImage).
+	var ctr *dagger.Container
+	if m.BaseCtr != nil {
+		ctr = m.BaseCtr
+	} else {
+		ctr = dag.Container().From(golangciLintImage)
+	}
+
+	ctr = ctr.
 		WithMountedCache("/go/pkg/mod", dag.CacheVolume("go-mod")).
 		WithMountedCache("/root/.cache/go-build", dag.CacheVolume("go-build")).
 		WithMountedCache("/root/.cache/golangci-lint", dag.CacheVolume("golangci-lint")).
