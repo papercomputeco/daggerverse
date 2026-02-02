@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://golangci-lint.run/jsonschema/golangci.jsonschema.json
+#
+# Default golangci-lint config.
+# Most projects provide their own .golangci.yml via the --config flag.
+# This fallback uses the standard linter set with no customization.
+
+version: "2"
+
+linters:
+  default: standard
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+run:
+  timeout: 5m
