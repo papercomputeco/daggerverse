@@ -1,5 +1,5 @@
 {
-  "name": "bucket-upload",
+  "name": "bucketuploader",
   "engineVersion": "v0.19.10",
   "sdk": {
     "source": "go"

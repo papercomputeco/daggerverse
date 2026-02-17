@@ -1,4 +1,4 @@
-module dagger/bucket-upload
+module dagger/bucketuploader
 
 go 1.25.5
 
