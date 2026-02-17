@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"path"
 
-	"dagger/bucket-upload/internal/dagger"
+	"dagger/bucketuploader/internal/dagger"
 )
 
-// BucketUploader provides bucket upload artifact capabilities.
+// Bucketuploader provides bucket upload artifact capabilities.
 // It expects an S3-compatible bucket via the AWS CLI.
-type BucketUploader struct {
+type Bucketuploader struct {
 	// Bucket endpoint URL
 	//
 	// +private
@@ -45,8 +45,8 @@ func New(
 
 	// Bucket secret access key
 	secretAccessKey *dagger.Secret,
-) *BucketUploader {
-	return &BucketUploader{
+) *Bucketuploader {
+	return &Bucketuploader{
 		Endpoint:        endpoint,
 		Bucket:          bucket,
 		AccessKeyID:     accessKeyID,
@@ -55,7 +55,7 @@ func New(
 }
 
 // upload syncs a directory to the bucket under the given prefix.
-func (b *BucketUploader) upload(
+func (b *Bucketuploader) upload(
 	ctx context.Context,
 	artifacts *dagger.Directory,
 	prefix string,
@@ -98,7 +98,7 @@ func (b *BucketUploader) upload(
 // UploadLatest uploads artifacts under both the given version prefix and
 // a "latest" prefix, so that the most recent release is always accessible
 // at a well-known path.
-func (b *BucketUploader) UploadLatest(
+func (b *Bucketuploader) UploadLatest(
 	ctx context.Context,
 
 	// Directory containing build artifacts to upload
@@ -119,7 +119,7 @@ func (b *BucketUploader) UploadLatest(
 }
 
 // UploadNightly uploads artifacts under the "nightly" prefix.
-func (b *BucketUploader) UploadNightly(
+func (b *Bucketuploader) UploadNightly(
 	ctx context.Context,
 
 	// Directory containing build artifacts to upload
@@ -134,7 +134,7 @@ func (b *BucketUploader) UploadNightly(
 
 // UploadFile uploads a single file to the bucket under an optional path
 // prefix. This is useful for standalone files like install scripts.
-func (b *BucketUploader) UploadFile(
+func (b *Bucketuploader) UploadFile(
 	ctx context.Context,
 
 	// The file to upload
