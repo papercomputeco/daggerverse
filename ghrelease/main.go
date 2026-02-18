@@ -1,10 +1,11 @@
-// Upload build artifacts to GitHub releases.
+// GitHub release management.
 //
-// This module takes a directory of build artifacts organized by OS and architecture
-// (e.g., <os>/<arch>/<filename>) and uploads them to a GitHub release.
-// Files are renamed to include the OS and architecture in their name
-// (e.g., <filename>-<os>-<arch>), and .sha256 checksum files are handled
-// so the extension stays at the end (e.g., <filename>-<os>-<arch>.sha256).
+// Upload takes a directory of build artifacts to a release.
+// Artifacts can optionally be flattened from an
+// <os>/<arch>/<filename> layout into a flat directory with files renamed
+// to <filename>-<os>-<arch> (with .sha256 checksum extensions preserved).
+// For example "darwin/arm64/tapes" and "darwin/arm64/tapes.sha256" can be flattened
+// to "tapes-darwin-arm64" and "tapes-darwin-arm64.sha256".
 
 package main
 
@@ -12,22 +13,39 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"strings"
 
 	"dagger/ghrelease/internal/dagger"
 )
 
-// Ghrelease uploads build artifacts to GitHub releases.
+// Ghrelease manages github releases.
 type Ghrelease struct {
 	// GitHub token for authentication
 	//
 	// +private
 	Token *dagger.Secret
 
-	// GitHub repository in owner/repo format (e.g., "papercomputeco/myproject")
+	// GitHub repository in owner/repo format (e.g., "papercomputeco/tapes")
 	//
 	// +private
 	Repo string
+
+	// Directory of assets to upload
+	//
+	// +private
+	Assets *dagger.Directory
+
+	// Whether to flatten Assets from <os>/<arch>/<filename> layout before uploading
+	//
+	// +private
+	DoFlatten bool
+
+	// Release tag for the upload
+	//
+	// +private
+	Tag string
+
+	// Utils
+	utils *dagger.Utilsverse
 }
 
 // New creates a new Ghrelease instance.
@@ -37,72 +55,58 @@ func New(
 
 	// GitHub repository in owner/repo format (e.g., "papercomputeco/myproject")
 	repo string,
+
+	// Directory of assets to upload
+	assets *dagger.Directory,
 ) *Ghrelease {
 	return &Ghrelease{
-		Token: token,
-		Repo:  repo,
+		Token:  token,
+		Repo:   repo,
+		Assets: assets,
+
+		utils: &dagger.Utilsverse{},
 	}
 }
 
-// Flatten takes a build artifact directory organized as <os>/<arch>/<filename>
-// and returns a flat directory with files renamed to <filename>-<os>-<arch>
+// WithFlatten enables flattening of the assets directory before upload.
+// When chained, the <os>/<arch>/<filename> directory structure is collapsed
+// into a flat directory with files renamed to <filename>-<os>-<arch>
 // (or <filename>-<os>-<arch>.sha256 for checksum files).
-func (m *Ghrelease) Flatten(
-	ctx context.Context,
-
-	// Directory containing build artifacts organized as <os>/<arch>/<filename>
-	build *dagger.Directory,
-) (*dagger.Directory, error) {
-	// Glob all files at the expected depth: <os>/<arch>/<filename>
-	entries, err := build.Glob(ctx, "*/*/*")
-	if err != nil {
-		return nil, fmt.Errorf("failed to list build artifacts: %w", err)
-	}
-
-	dist := dag.Directory()
-
-	for _, entry := range entries {
-		parts := strings.SplitN(entry, "/", 3)
-		if len(parts) != 3 {
-			continue
-		}
-		os := parts[0]
-		arch := parts[1]
-		filename := parts[2]
-
-		var newName string
-		if strings.HasSuffix(filename, ".sha256") {
-			base := strings.TrimSuffix(filename, ".sha256")
-			newName = fmt.Sprintf("%s-%s-%s.sha256", base, os, arch)
-		} else {
-			newName = fmt.Sprintf("%s-%s-%s", filename, os, arch)
-		}
-
-		dist = dist.WithFile(newName, build.File(entry))
-	}
-
-	return dist, nil
+func (m *Ghrelease) WithFlatten() *Ghrelease {
+	m.DoFlatten = true
+	return m
 }
 
-// Upload uploads all files in the given directory to a GitHub release.
-// The directory should be flat (no subdirectories) — use Flatten first
-// if you need to rename build artifacts from an <os>/<arch>/<filename> layout.
-func (m *Ghrelease) Upload(
-	ctx context.Context,
-
-	// Directory containing files to upload as release assets
-	dist *dagger.Directory,
-
+// WithTag stores the release tag for upload.
+func (m *Ghrelease) WithTag(
 	// Release tag to upload assets to (e.g., "nightly", "v1.0.0")
 	tag string,
-) error {
+) *Ghrelease {
+	m.Tag = tag
+	return m
+}
+
+// Upload uploads all assets to a GitHub release.
+// If WithFlatten was chained, the assets are flattened first.
+// The tag must have been set via WithTag before calling Upload.
+func (m *Ghrelease) Upload(ctx context.Context) error {
+	if m.Tag == "" {
+		return fmt.Errorf("no tag set: call WithTag before Upload")
+	}
+
+	dist := m.Assets
+
+	if m.DoFlatten {
+		dist = m.utils.FlattenNameOsArch(m.Assets)
+	}
+
 	entries, err := dist.Glob(ctx, "*")
 	if err != nil {
 		return fmt.Errorf("failed to list dist files: %w", err)
 	}
 
 	uploadArgs := []string{
-		"gh", "release", "upload", tag,
+		"gh", "release", "upload", m.Tag,
 		"--repo", m.Repo,
 		"--clobber",
 	}
