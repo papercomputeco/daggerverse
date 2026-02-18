@@ -43,9 +43,6 @@ type Ghrelease struct {
 	//
 	// +private
 	Tag string
-
-	// Utils
-	utils *dagger.Utilsverse
 }
 
 // New creates a new Ghrelease instance.
@@ -63,8 +60,6 @@ func New(
 		Token:  token,
 		Repo:   repo,
 		Assets: assets,
-
-		utils: dag.Utilsverse(),
 	}
 }
 
@@ -97,7 +92,7 @@ func (m *Ghrelease) Upload(ctx context.Context) error {
 	dist := m.Assets
 
 	if m.DoFlatten {
-		dist = m.utils.FlattenNameOsArch(m.Assets)
+		dist = dag.Utilsverse().FlattenNameOsArch(m.Assets)
 	}
 
 	entries, err := dist.Glob(ctx, "*")
