@@ -64,7 +64,7 @@ func New(
 		Repo:   repo,
 		Assets: assets,
 
-		utils: &dagger.Utilsverse{},
+		utils: dag.Utilsverse(),
 	}
 }
 
