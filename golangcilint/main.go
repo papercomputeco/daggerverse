@@ -48,6 +48,7 @@ type Golangcilint struct {
 // New creates a new Golangcilint module instance.
 func New(
 	// The Go source directory to lint.
+	// +defaultPath="/"
 	source *dagger.Directory,
 
 	// An optional golangci-lint configuration file (.golangci.yml) that
@@ -91,6 +92,8 @@ func (m *Golangcilint) Lint() (*dagger.Directory, error) {
 // Check runs golangci-lint on the source directory without applying fixes.
 // It returns the linter output as a string. If there are lint violations the
 // Dagger pipeline will fail, making this suitable for CI checks.
+//
+// +check
 func (m *Golangcilint) Check(ctx context.Context) (string, error) {
 	ctr, err := m.lintContainer()
 	if err != nil {
