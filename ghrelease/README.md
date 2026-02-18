@@ -1,18 +1,20 @@
 # github.com/papercomputeco/daggerverse/ghrelease
 
-Upload build artifacts to GitHub releases.
+GitHub release management.
 
-Takes a directory of build artifacts organized by OS and architecture
-(e.g., `<os>/<arch>/<filename>`), flattens them into renamed files
-(e.g., `<filename>-<os>-<arch>`), and uploads them to a GitHub release.
-Checksum files keep their `.sha256` extension at the end
-(e.g., `<filename>-<os>-<arch>.sha256`).
+Upload takes a directory of build artifacts to a release.
+Artifacts can optionally be flattened from an
+`<os>/<arch>/<filename>` layout into a flat directory with files renamed
+to `<filename>-<os>-<arch>` (with `.sha256` checksum extensions preserved).
+For example `darwin/arm64/tapes` and `darwin/arm64/tapes.sha256` become
+`tapes-darwin-arm64` and `tapes-darwin-arm64.sha256`.
 
 
 | Function | Description |
 |----------|-------------|
-| `flatten` | Takes an `<os>/<arch>/<filename>` directory and returns a flat directory with files renamed to `<filename>-<os>-<arch>`. |
-| `upload` | Uploads all files in a flat directory to a GitHub release. |
+| `with-flatten` | Enables flattening of the assets directory from `<os>/<arch>/<filename>` into `<filename>-<os>-<arch>` before upload. |
+| `with-tag` | Sets the release tag for upload. |
+| `upload` | Uploads all assets to a GitHub release. If `with-flatten` was chained, assets are flattened first. |
 
 
 ## Constructor arguments
@@ -21,6 +23,7 @@ Checksum files keep their `.sha256` extension at the end
 |----------|------|-------------|
 | `--token` | `Secret` | GitHub token with permissions to upload release assets |
 | `--repo` | `String` | GitHub repository in `owner/repo` format |
+| `--assets` | `Directory` | Directory of assets to upload |
 
 
 ## Usage
@@ -32,27 +35,20 @@ dagger call \
   -m github.com/papercomputeco/daggerverse/ghrelease \
   --token env:GITHUB_TOKEN \
   --repo "papercomputeco/myproject" \
-  flatten --build ./build \
-  upload --tag "nightly"
+  --assets ./build \
+  with-flatten \
+  with-tag --tag "nightly" \
+  upload
 ```
 
-### Flatten only (inspect or export the result)
+### Upload a pre-built flat directory
 
 ```sh
 dagger call \
   -m github.com/papercomputeco/daggerverse/ghrelease \
   --token env:GITHUB_TOKEN \
   --repo "papercomputeco/myproject" \
-  flatten --build ./build \
-  export --path ./dist
-```
-
-### Upload a pre-built directory
-
-```sh
-dagger call \
-  -m github.com/papercomputeco/daggerverse/ghrelease \
-  --token env:GITHUB_TOKEN \
-  --repo "papercomputeco/myproject" \
-  upload --dist ./dist --tag "v1.0.0"
+  --assets ./dist \
+  with-tag --tag "v1.0.0" \
+  upload
 ```
