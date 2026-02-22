@@ -8,6 +8,11 @@ import (
 	"dagger/bucketuploader/internal/dagger"
 )
 
+const (
+	nightly = "nightly"
+	latest  = "latest"
+)
+
 // Bucketuploader provides bucket upload artifact capabilities.
 // It expects an S3-compatible bucket via the AWS CLI.
 type Bucketuploader struct {
@@ -95,6 +100,29 @@ func (b *Bucketuploader) upload(
 	return nil
 }
 
+// UploadTree uploads a directory to the bucket under an explicit prefix,
+// preserving the directory's internal structure as the key suffix.
+//
+// Unlike UploadLatest or UploadNightly, which use fixed prefix conventions,
+// UploadTree allows the caller to specify any prefix: useful for one off releases,
+// OCI registry layouts, or nested directory structures with specifc key paths.
+func (b *Bucketuploader) UploadTree(
+	ctx context.Context,
+
+	// Directory to upload — internal structure becomes the key suffix
+	artifacts *dagger.Directory,
+
+	// Bucket key prefix. Use "" to upload at the bucket root.
+	// +optional
+	prefix string,
+) error {
+	if err := b.upload(ctx, artifacts, prefix); err != nil {
+		return fmt.Errorf("could not upload tree: %w", err)
+	}
+
+	return nil
+}
+
 // UploadLatest uploads artifacts under both the given version prefix and
 // a "latest" prefix, so that the most recent release is always accessible
 // at a well-known path.
@@ -111,7 +139,7 @@ func (b *Bucketuploader) UploadLatest(
 		return fmt.Errorf("could not upload versioned release artifacts: %w", err)
 	}
 
-	if err := b.upload(ctx, artifacts, "latest"); err != nil {
+	if err := b.upload(ctx, artifacts, latest); err != nil {
 		return fmt.Errorf("could not upload latest release artifacts: %w", err)
 	}
 
@@ -125,7 +153,7 @@ func (b *Bucketuploader) UploadNightly(
 	// Directory containing build artifacts to upload
 	artifacts *dagger.Directory,
 ) error {
-	if err := b.upload(ctx, artifacts, "nightly"); err != nil {
+	if err := b.upload(ctx, artifacts, nightly); err != nil {
 		return fmt.Errorf("could not upload nightly artifacts: %w", err)
 	}
 
