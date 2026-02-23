@@ -86,7 +86,7 @@ func (b *Bucketuploader) upload(
 		WithSecretVariable("AWS_ACCESS_KEY_ID", b.AccessKeyID).
 		WithSecretVariable("AWS_SECRET_ACCESS_KEY", b.SecretAccessKey).
 		WithEnvVariable("AWS_DEFAULT_REGION", "auto").
-		WithDirectory("/artifacts", artifacts).
+		WithMountedDirectory("/artifacts", artifacts).
 		WithWorkdir("/artifacts")
 
 	if len(metadata) == 0 {
