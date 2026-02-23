@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strings"
 
 	"dagger/bucketuploader/internal/dagger"
 )
@@ -115,7 +116,12 @@ func (b *Bucketuploader) upload(
 
 	// Upload each file individually: files with metadata get extra headers,
 	// files without metadata are uploaded with a plain cp.
+	// Glob returns directory entries with a trailing slash — skip them.
 	for _, entry := range entries {
+		if strings.HasSuffix(entry, "/") {
+			continue
+		}
+
 		fileDest := fmt.Sprintf("%s/%s", destination, entry)
 
 		cmd := []string{
