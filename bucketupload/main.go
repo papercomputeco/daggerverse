@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"path"
 	"strings"
 
 	"dagger/bucketuploader/internal/dagger"
@@ -15,7 +14,7 @@ const (
 )
 
 // Bucketuploader provides bucket upload artifact capabilities.
-// It expects an S3-compatible bucket via the AWS CLI.
+// It expects an S3-compatible bucket and uses rclone for uploads.
 type Bucketuploader struct {
 	// Bucket endpoint URL
 	//
@@ -60,32 +59,68 @@ func New(
 	}
 }
 
-// upload puts each file in the directory into the bucket under the given
-// prefix using "aws s3api put-object". This gives full control over upload
-// headers, including passing a pre-computed --checksum-sha256 value.
+// rcloneContainer returns a container with rclone configured for the bucket.
+// The "r2" remote is set up entirely through environment variables.
+func (b *Bucketuploader) rcloneContainer(
+	ctx context.Context,
+	artifacts *dagger.Directory,
+) (*dagger.Container, string, error) {
+	bucketName, err := b.Bucket.Plaintext(ctx)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get bucket name: %w", err)
+	}
+
+	endpointURL, err := b.Endpoint.Plaintext(ctx)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get endpoint: %w", err)
+	}
+
+	ctr := dag.Container().
+		From("rclone/rclone:latest").
+		WithSecretVariable("RCLONE_CONFIG_R2_ACCESS_KEY_ID", b.AccessKeyID).
+		WithSecretVariable("RCLONE_CONFIG_R2_SECRET_ACCESS_KEY", b.SecretAccessKey).
+		WithEnvVariable("RCLONE_CONFIG_R2_TYPE", "s3").
+		WithEnvVariable("RCLONE_CONFIG_R2_PROVIDER", "Cloudflare").
+		WithEnvVariable("RCLONE_CONFIG_R2_ENDPOINT", endpointURL).
+		WithMountedDirectory("/artifacts", artifacts).
+		WithWorkdir("/artifacts")
+
+	return ctr, bucketName, nil
+}
+
+// upload copies files from the directory into the bucket under the given
+// prefix using rclone. When no per-file metadata is provided, a bulk
+// "rclone copy" is used. When metadata is present, files with metadata
+// entries are uploaded individually via "rclone copyto" with the
+// appropriate --header-upload flags; remaining files use the bulk path.
 func (b *Bucketuploader) upload(
 	ctx context.Context,
 	artifacts *dagger.Directory,
 	prefix string,
 	metadata []FilePathMetadata,
 ) error {
-	bucketName, err := b.Bucket.Plaintext(ctx)
+	ctr, bucketName, err := b.rcloneContainer(ctx, artifacts)
 	if err != nil {
-		return fmt.Errorf("failed to get bucket name: %w", err)
+		return err
 	}
 
-	endpointURL, err := b.Endpoint.Plaintext(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get endpoint: %w", err)
-	}
+	dest := fmt.Sprintf("r2:%s/%s", bucketName, prefix)
 
-	awsCli := dag.Container().
-		From("amazon/aws-cli:latest").
-		WithSecretVariable("AWS_ACCESS_KEY_ID", b.AccessKeyID).
-		WithSecretVariable("AWS_SECRET_ACCESS_KEY", b.SecretAccessKey).
-		WithEnvVariable("AWS_DEFAULT_REGION", "auto").
-		WithMountedDirectory("/artifacts", artifacts).
-		WithWorkdir("/artifacts")
+	if len(metadata) == 0 {
+		// Fast path: no per-file metadata, bulk copy.
+		_, err = ctr.
+			WithExec([]string{
+				"rclone", "copy", ".",
+				dest,
+				"--transfers", "4",
+				"--s3-chunk-size", "100M",
+			}).
+			Sync(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to upload artifacts to %s: %w", dest, err)
+		}
+		return nil
+	}
 
 	// Build a lookup of files that have metadata.
 	idx := buildMetadataIndex(metadata)
@@ -96,39 +131,43 @@ func (b *Bucketuploader) upload(
 		return fmt.Errorf("failed to list artifact files: %w", err)
 	}
 
-	// Upload each file individually via "aws s3api put-object".
+	// Upload each file individually via "rclone copyto".
 	// Glob returns directory entries with a trailing slash — skip them.
 	for _, entry := range entries {
 		if strings.HasSuffix(entry, "/") {
 			continue
 		}
 
-		key := path.Join(prefix, entry)
+		fileDest := fmt.Sprintf("%s/%s", dest, entry)
 
 		cmd := []string{
-			"aws", "s3api", "put-object",
-			"--bucket", bucketName,
-			"--key", key,
-			"--body", entry,
-			"--endpoint-url", endpointURL,
+			"rclone", "copyto",
+			entry,
+			fileDest,
+			"--s3-chunk-size", "100M",
 		}
 
 		if m, ok := idx[entry]; ok {
 			if m.ContentType != "" {
-				cmd = append(cmd, "--content-type", m.ContentType)
+				cmd = append(cmd,
+					"--header-upload",
+					fmt.Sprintf("Content-Type: %s", m.ContentType),
+				)
 			}
 			if m.ChecksumSHA256 != "" {
-				cmd = append(cmd, "--checksum-sha256", m.ChecksumSHA256)
+				cmd = append(cmd,
+					"--header-upload",
+					fmt.Sprintf("x-amz-checksum-sha256: %s", m.ChecksumSHA256),
+				)
 			}
 		}
 
-		awsCli = awsCli.WithExec(cmd)
+		ctr = ctr.WithExec(cmd)
 	}
 
-	_, err = awsCli.Sync(ctx)
+	_, err = ctr.Sync(ctx)
 	if err != nil {
-		destination := fmt.Sprintf("s3://%s/%s", bucketName, prefix)
-		return fmt.Errorf("failed to upload artifacts to %s: %w", destination, err)
+		return fmt.Errorf("failed to upload artifacts to %s: %w", dest, err)
 	}
 
 	return nil
