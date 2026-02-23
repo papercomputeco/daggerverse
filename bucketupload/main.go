@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"strings"
 
 	"dagger/bucketuploader/internal/dagger"
 )
@@ -13,30 +12,6 @@ const (
 	nightly = "nightly"
 	latest  = "latest"
 )
-
-// FileMetadata holds optional upload headers for a file.
-type FileMetadata struct {
-	// Base64-encoded SHA-256 checksum of the file contents.
-	// When set, the x-amz-checksum-sha256 header is sent with the upload.
-	// +optional
-	ChecksumSHA256 string
-
-	// MIME content type for the file (e.g., "application/octet-stream").
-	// When set, the Content-Type header is sent with the upload.
-	// +optional
-	ContentType string
-}
-
-// FilePathMetadata pairs a relative file path with its upload metadata.
-// Used by directory-based upload methods to apply per-file headers.
-type FilePathMetadata struct {
-	// Relative path of the file inside the artifacts directory
-	// (e.g., "bin/my-binary").
-	Path string
-
-	// Upload metadata for this file.
-	Meta FileMetadata
-}
 
 // Bucketuploader provides bucket upload artifact capabilities.
 // It expects an S3-compatible bucket via the AWS CLI.
@@ -82,20 +57,6 @@ func New(
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
 	}
-}
-
-// metadataIndex maps cleaned relative file paths to their metadata.
-type metadataIndex map[string]FileMetadata
-
-// buildMetadataIndex creates a lookup map from a slice of FilePathMetadata,
-// normalizing paths by stripping leading "./" and "/" prefixes.
-func buildMetadataIndex(metadata []FilePathMetadata) metadataIndex {
-	idx := make(metadataIndex, len(metadata))
-	for _, m := range metadata {
-		key := strings.TrimPrefix(strings.TrimPrefix(m.Path, "./"), "/")
-		idx[key] = m.Meta
-	}
-	return idx
 }
 
 // upload syncs a directory to the bucket under the given prefix.
@@ -296,8 +257,9 @@ func (b *Bucketuploader) UploadFile(
 			return fmt.Errorf("could not get file name: %w", err)
 		}
 		m = []FilePathMetadata{{
-			Path: name,
-			Meta: *metadata,
+			Path:           name,
+			ChecksumSHA256: metadata.ChecksumSHA256,
+			ContentType:    metadata.ContentType,
 		}}
 	}
 
