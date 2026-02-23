@@ -60,10 +60,9 @@ func New(
 	}
 }
 
-// upload syncs a directory to the bucket under the given prefix.
-// When metadata is provided, files that have metadata entries are uploaded
-// individually with the appropriate headers via "aws s3 cp". Files without
-// metadata entries are still synced in bulk via "aws s3 sync".
+// upload puts each file in the directory into the bucket under the given
+// prefix using "aws s3api put-object". This gives full control over upload
+// headers, including passing a pre-computed --checksum-sha256 value.
 func (b *Bucketuploader) upload(
 	ctx context.Context,
 	artifacts *dagger.Directory,
@@ -80,8 +79,6 @@ func (b *Bucketuploader) upload(
 		return fmt.Errorf("failed to get endpoint: %w", err)
 	}
 
-	destination := fmt.Sprintf("s3://%s", path.Join(bucketName, prefix))
-
 	awsCli := dag.Container().
 		From("amazon/aws-cli:latest").
 		WithSecretVariable("AWS_ACCESS_KEY_ID", b.AccessKeyID).
@@ -89,21 +86,6 @@ func (b *Bucketuploader) upload(
 		WithEnvVariable("AWS_DEFAULT_REGION", "auto").
 		WithMountedDirectory("/artifacts", artifacts).
 		WithWorkdir("/artifacts")
-
-	if len(metadata) == 0 {
-		// Fast path: no per-file metadata, use bulk sync.
-		_, err = awsCli.
-			WithExec([]string{
-				"aws", "s3", "sync", ".",
-				destination,
-				"--endpoint-url", endpointURL,
-			}).
-			Sync(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to upload artifacts to %s: %w", destination, err)
-		}
-		return nil
-	}
 
 	// Build a lookup of files that have metadata.
 	idx := buildMetadataIndex(metadata)
@@ -114,20 +96,20 @@ func (b *Bucketuploader) upload(
 		return fmt.Errorf("failed to list artifact files: %w", err)
 	}
 
-	// Upload each file individually: files with metadata get extra headers,
-	// files without metadata are uploaded with a plain cp.
+	// Upload each file individually via "aws s3api put-object".
 	// Glob returns directory entries with a trailing slash — skip them.
 	for _, entry := range entries {
 		if strings.HasSuffix(entry, "/") {
 			continue
 		}
 
-		fileDest := fmt.Sprintf("%s/%s", destination, entry)
+		key := path.Join(prefix, entry)
 
 		cmd := []string{
-			"aws", "s3", "cp",
-			entry,
-			fileDest,
+			"aws", "s3api", "put-object",
+			"--bucket", bucketName,
+			"--key", key,
+			"--body", entry,
 			"--endpoint-url", endpointURL,
 		}
 
@@ -136,10 +118,7 @@ func (b *Bucketuploader) upload(
 				cmd = append(cmd, "--content-type", m.ContentType)
 			}
 			if m.ChecksumSHA256 != "" {
-				cmd = append(cmd,
-					"--checksum-algorithm", "SHA256",
-					"--checksum-sha256", m.ChecksumSHA256,
-				)
+				cmd = append(cmd, "--checksum-sha256", m.ChecksumSHA256)
 			}
 		}
 
@@ -148,6 +127,7 @@ func (b *Bucketuploader) upload(
 
 	_, err = awsCli.Sync(ctx)
 	if err != nil {
+		destination := fmt.Sprintf("s3://%s/%s", bucketName, prefix)
 		return fmt.Errorf("failed to upload artifacts to %s: %w", destination, err)
 	}
 
@@ -159,10 +139,10 @@ func (b *Bucketuploader) upload(
 //
 // Unlike UploadLatest or UploadNightly, which use fixed prefix conventions,
 // UploadTree allows the caller to specify any prefix: useful for one off releases,
-// OCI registry layouts, or nested directory structures with specifc key paths.
+// OCI registry layouts, or nested directory structures with specific key paths.
 //
 // When metadata is supplied, matching files (by relative path) are uploaded
-// individually with the specified Content-Type and/or checksum headers.
+// with the specified Content-Type and/or pre-computed SHA-256 checksum.
 func (b *Bucketuploader) UploadTree(
 	ctx context.Context,
 
