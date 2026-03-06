@@ -59,12 +59,6 @@ type Ghrelease struct {
 func New(
 	// GitHub token with permissions to create releases
 	token *dagger.Secret,
-
-	// GitHub repository in owner/repo format (e.g., "papercomputeco/myproject")
-	repo string,
-
-	// Directory of assets to upload
-	assets *dagger.Directory,
 ) *Ghrelease {
 	return &Ghrelease{
 		Token: token,
