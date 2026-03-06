@@ -19,7 +19,7 @@ var validPRPrefixes = []string{
 //
 // This is intended to be called from a GitHub Actions workflow where the
 // GitHub token and PR metadata are available.
-func (m *GhContrib) CheckPullRequest(
+func (m *Ghcontrib) CheckPullRequest(
 	ctx context.Context,
 
 	// The pull request number to check

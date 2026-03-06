@@ -8,7 +8,7 @@ package main
 
 import "dagger/gh-contrib/internal/dagger"
 
-type GhContrib struct {
+type Ghcontrib struct {
 	// GitHub token
 	//
 	// +private
@@ -26,15 +26,15 @@ func New(
 
 	// GitHub repository (e.g. "owner/repo").
 	repo string,
-) (*GhContrib, error) {
-	return &GhContrib{
+) (*Ghcontrib, error) {
+	return &Ghcontrib{
 		Token: token,
 		Repo:  repo,
 	}, nil
 }
 
 // ghContainer returns a container with the GitHub CLI installed and authenticated.
-func (m *GhContrib) ghContainer() *dagger.Container {
+func (m *Ghcontrib) ghContainer() *dagger.Container {
 	return dag.Container().
 		From("alpine:latest").
 		WithExec([]string{"apk", "add", "--no-cache", "github-cli"}).
