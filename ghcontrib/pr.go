@@ -9,9 +9,15 @@ import (
 
 // validPRPrefixes defines the set of allowed PR title prefixes.
 var validPRPrefixes = []string{
+	// Literal emojis
 	"✨ feat: ",
 	"🔧 fix: ",
 	"🧹 chore: ",
+
+	// Colon based emoji derivatives
+	":sparkles: feat: ",
+	":wrench: fix: ",
+	":broom: chore: ",
 }
 
 // CheckPullRequest validates that a pull request conforms to project standards.

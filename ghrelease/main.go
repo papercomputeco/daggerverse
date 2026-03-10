@@ -126,7 +126,7 @@ func (m *Ghrelease) WithDryRun() *Ghrelease {
 //
 //   - "⚠️ breaking:" → major bump
 //   - "✨ feat:" → minor bump
-//   - "🔧 fix:" and everything else → patch bump
+//   - "🔧 fix:", "🧹 chore:", and everything else → patch bump
 //
 // The highest-priority bump wins. WithSource must be called before Create.
 // Chain WithDryRun before Create to skip the actual release creation.

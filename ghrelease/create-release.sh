@@ -28,26 +28,31 @@ BUMP="patch"
 BREAKING=""
 FEATURES=""
 FIXES=""
+CHORES=""
 OTHER=""
 
 IFS='
 '
 for LINE in $COMMITS; do
   case "$LINE" in
-    *"⚠️ breaking:"*|*"breaking:"*)
+    *"⚠️ breaking:"*|*":warning: breaking:"*|*"breaking:"*)
       BUMP="major"
       BREAKING="${BREAKING}
 - ${LINE}"
       ;;
-    *"✨ feat:"*|*"feat:"*)
+    *"✨ feat:"*|*":sparkles: feat:"*|*"feat:"*)
       if [ "$BUMP" != "major" ]; then
         BUMP="minor"
       fi
       FEATURES="${FEATURES}
 - ${LINE}"
       ;;
-    *"🔧 fix:"*|*"fix:"*)
+    *"🔧 fix:"*|*":wrench: fix:"*|*"fix:"*)
       FIXES="${FIXES}
+- ${LINE}"
+      ;;
+    *"🧹 chore:"*|*":broom: chore:"*|*"chore:"*)
+      CHORES="${CHORES}
 - ${LINE}"
       ;;
     *)
@@ -103,6 +108,13 @@ fi
 if [ -n "$FIXES" ]; then
   NOTES="${NOTES}## 🔧 Fixes
 ${FIXES}
+
+"
+fi
+
+if [ -n "$CHORES" ]; then
+  NOTES="${NOTES}## 🧹 Chores
+${CHORES}
 
 "
 fi
