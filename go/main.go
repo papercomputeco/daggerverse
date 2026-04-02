@@ -58,3 +58,12 @@ func (g *Go) CheckGoModTidy(ctx context.Context) (string, error) {
 
 	return fmt.Sprintf("go.mod and go.sum are tidy: %s", out), nil
 }
+
+// CheckGoVet runs "go vet" against the Source directory and the root Go mod
+//
+// +check
+func (g *Go) CheckGoVet(ctx context.Context) (string, error) {
+	return g.goContainer().
+		WithExec([]string{"go", "vet"}).
+		Stdout(ctx)
+}
