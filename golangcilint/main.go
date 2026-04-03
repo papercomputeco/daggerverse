@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	golangciLintImage string = "golangci/golangci-lint:v2.8.0"
+	golangciLintImage string = "golangci/golangci-lint:v2.11"
 )
 
 //go:embed .golangci.yml
