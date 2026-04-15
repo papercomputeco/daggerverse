@@ -14,12 +14,14 @@ var validPRPrefixes = []string{
 	"🔧 fix: ",
 	"🧹 chore: ",
 	"♻️ refactor: ",
+	"🎨 design: ",
 
 	// Colon based emoji derivatives
 	":sparkles: feat: ",
 	":wrench: fix: ",
 	":broom: chore: ",
 	":recycle: refactor: ",
+	":art: design: ",
 }
 
 // CheckPullRequest validates that a pull request conforms to project standards.
