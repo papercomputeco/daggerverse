@@ -6,6 +6,8 @@ Currently checks that PR titles start with a required conventional prefix:
 - `✨ feat: ` — new features
 - `🔧 fix: ` — bug fixes
 - `🧹 chore: ` — maintenance tasks
+- `♻️ refactor: ` — code restructuring without behavior changes
+- `🎨 design: ` — design and UX updates
 
 
 | Function | Description |
