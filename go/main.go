@@ -14,7 +14,6 @@ type Go struct {
 
 func New(
 	// +defaultPath="/"
-	// +ignore=[".git", ".direnv", ".devenv", "build", "tmp", "tapes.dev/node_modules", "tapes.dev/.astro"]
 	source *dagger.Directory,
 ) *Go {
 	return &Go{
