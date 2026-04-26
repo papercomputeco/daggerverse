@@ -2,7 +2,7 @@
 //
 // This module provides functions to check that pull requests conform to
 // project standards. It uses the GitHub CLI (gh) to inspect PR metadata
-// and validates titles, labels, and other properties.
+// and validates titles, Linear references, labels, and other properties.
 
 package main
 

@@ -2,15 +2,20 @@
 
 Various GitHub contribution utilities and standards conforming checks.
 
-Currently checks that PR titles start with a required conventional prefix:
-- `✨ feat: ` — new features
-- `🔧 fix: ` — bug fixes
-- `🧹 chore: ` — maintenance tasks
+Currently includes checks for:
+- required conventional PR title prefixes:
+  - `✨ feat: ` — new features
+  - `🔧 fix: ` — bug fixes
+  - `🧹 chore: ` — maintenance tasks
+  - `♻️ refactor: ` — refactors
+- Linear magic-word references in the PR title or body, e.g. `fixes PCC-123` or `related to DES-456`
 
+Supported Linear teams are `PCC`, `DES`, and `REL`.
 
 | Function | Description |
 |----------|-------------|
-| `check-pull-request` | Fetches a PR via `gh pr view` and validates that its title starts with a required prefix. Fails the pipeline if the title is non-conforming. |
+| `check-pull-request` | Fetches a PR via `gh pr view` and validates that its title starts with a required prefix. Fails the pipeline if the PR is non-conforming. |
+| `check-pull-request-linear-magic-word` | Fetches a PR via `gh pr view` and validates only the Linear magic-word reference. |
 
 
 ## Constructor arguments
@@ -31,6 +36,16 @@ dagger call \
   --token env:GITHUB_TOKEN \
   --repo "papercomputeco/myproject" \
   check-pull-request --number 42
+```
+
+### Check only the Linear magic-word reference
+
+```sh
+dagger call \
+  -m github.com/papercomputeco/daggerverse/ghcontrib \
+  --token env:GITHUB_TOKEN \
+  --repo "papercomputeco/myproject" \
+  check-pull-request-linear-magic-word --number 42
 ```
 
 ### From a GitHub Actions workflow
