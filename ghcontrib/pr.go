@@ -15,12 +15,14 @@ var validPRPrefixes = []string{
 	"🔧 fix: ",
 	"🧹 chore: ",
 	"♻️ refactor: ",
+	"🎨 design: ",
 
 	// Colon based emoji derivatives
 	":sparkles: feat: ",
 	":wrench: fix: ",
 	":broom: chore: ",
 	":recycle: refactor: ",
+	":art: design: ",
 }
 
 // Linear's magic words compiled from:

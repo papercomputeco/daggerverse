@@ -2,6 +2,7 @@
 
 Various GitHub contribution utilities and standards conforming checks.
 
+<<<<<<< add-pr-linear-checker
 Currently includes checks for:
 - required conventional PR title prefixes:
   - `✨ feat: ` — new features
@@ -9,6 +10,14 @@ Currently includes checks for:
   - `🧹 chore: ` — maintenance tasks
   - `♻️ refactor: ` — refactors
 - Linear magic-word references in the PR title or body, e.g. `fixes PCC-123` or `related to DES-456`
+=======
+Currently checks that PR titles start with a required conventional prefix:
+- `✨ feat: ` — new features
+- `🔧 fix: ` — bug fixes
+- `🧹 chore: ` — maintenance tasks
+- `♻️ refactor: ` — code restructuring without behavior changes
+- `🎨 design: ` — design and UX updates
+>>>>>>> main
 
 Supported Linear teams are `PCC`, `DES`, and `REL`.
 
