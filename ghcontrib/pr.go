@@ -129,7 +129,7 @@ func validatePullRequestLinearMagicWord(title, body string, number int) error {
 	}
 
 	return fmt.Errorf(
-		"PR #%d does not reference a Linear issue with a required magic word.\n\nExpected format: <magic word> <Linear team>-123\nAllowed Linear teams: PCC, DES, REL\nExamples: fixes PCC-123, related to DES-456",
+		"PR #%d does not reference a Linear issue with a required magic word.\n\nExpected format: <magic word> <Linear team>-123\nExamples: fixes PCC-123, related to DES-456",
 		number,
 	)
 }
