@@ -16,6 +16,7 @@ var validPRPrefixes = []string{
 	"🧹 chore: ",
 	"♻️ refactor: ",
 	"🎨 design: ",
+	"📚 docs: ",
 
 	// Colon based emoji derivatives
 	":sparkles: feat: ",
@@ -23,6 +24,7 @@ var validPRPrefixes = []string{
 	":broom: chore: ",
 	":recycle: refactor: ",
 	":art: design: ",
+	":books: docs: ",
 }
 
 // Linear's magic words compiled from:

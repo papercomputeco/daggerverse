@@ -9,6 +9,7 @@ Currently includes checks for:
   - `🧹 chore: ` — maintenance tasks
   - `♻️ refactor: ` — refactors
   - `🎨 design: ` — design and UX updates
+  - `📚 docs: ` — documentation updates
 - Linear magic-word references in the PR title or body, e.g. `fixes PCC-123` or `related to DES-456`.
   Must include a supported Paper Compute Co. Linear team.
 
