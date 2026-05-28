@@ -124,9 +124,9 @@ func (m *Ghrelease) WithDryRun() *Ghrelease {
 // version, generates categorized release notes, and creates a new GitHub
 // release. Commits since the last tag are classified as follows:
 //
-//   - "⚠️ breaking:" → major bump
-//   - "✨ feat:" → minor bump
-//   - "🔧 fix:", "🧹 chore:", and everything else → patch bump
+//   - "⚠️ breaking:" or a conventional "!" marker on feat/fix/chore/refactor → major bump
+//   - "✨ feat:" or "✨ feat(scope):" → minor bump
+//   - "🔧 fix:", "🧹 chore:", "♻️ refactor:", and everything else → patch bump
 //
 // The highest-priority bump wins. WithSource must be called before Create.
 // Chain WithDryRun before Create to skip the actual release creation.
