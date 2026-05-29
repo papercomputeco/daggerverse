@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -e
 
-cd /src
+cd "${SRC_DIR:-/src}"
 
 # --- Determine the latest semver tag ---
 LAST_TAG=$(git tag --list 'v*' --sort=-version:refname | head -n1)
@@ -29,30 +29,56 @@ BREAKING=""
 FEATURES=""
 FIXES=""
 CHORES=""
+REFACTORS=""
 OTHER=""
+
+commit_type() {
+  SUBJECT="$1"
+
+  case "$SUBJECT" in
+    "⚠️ breaking:"*|":warning: breaking:"*) echo "breaking"; return ;;
+    "✨ feat"*|":sparkles: feat"*) SUBJECT="feat${SUBJECT#* feat}" ;;
+    "🔧 fix"*|":wrench: fix"*) SUBJECT="fix${SUBJECT#* fix}" ;;
+    "🧹 chore"*|":broom: chore"*) SUBJECT="chore${SUBJECT#* chore}" ;;
+    "♻️ refactor"*|":recycle: refactor"*) SUBJECT="refactor${SUBJECT#* refactor}" ;;
+  esac
+
+  case "$SUBJECT" in
+    "breaking:"*|"feat!:"*|"feat("*")!:"*|"fix!:"*|"fix("*")!:"*|"chore!:"*|"chore("*")!:"*|"refactor!:"*|"refactor("*")!:"*) echo "breaking" ;;
+    "feat:"*|"feat("*"):"*) echo "feat" ;;
+    "fix:"*|"fix("*"):"*) echo "fix" ;;
+    "chore:"*|"chore("*"):"*) echo "chore" ;;
+    "refactor:"*|"refactor("*"):"*|"refactor!:"*|"refactor("*")!:"*) echo "refactor" ;;
+    *) echo "other" ;;
+  esac
+}
 
 IFS='
 '
 for LINE in $COMMITS; do
-  case "$LINE" in
-    *"⚠️ breaking:"*|*":warning: breaking:"*|*"breaking:"*)
+  case "$(commit_type "$LINE")" in
+    breaking)
       BUMP="major"
       BREAKING="${BREAKING}
 - ${LINE}"
       ;;
-    *"✨ feat:"*|*":sparkles: feat:"*|*"feat:"*)
+    feat)
       if [ "$BUMP" != "major" ]; then
         BUMP="minor"
       fi
       FEATURES="${FEATURES}
 - ${LINE}"
       ;;
-    *"🔧 fix:"*|*":wrench: fix:"*|*"fix:"*)
+    fix)
       FIXES="${FIXES}
 - ${LINE}"
       ;;
-    *"🧹 chore:"*|*":broom: chore:"*|*"chore:"*)
+    chore)
       CHORES="${CHORES}
+- ${LINE}"
+      ;;
+    refactor)
+      REFACTORS="${REFACTORS}
 - ${LINE}"
       ;;
     *)
@@ -115,6 +141,13 @@ fi
 if [ -n "$CHORES" ]; then
   NOTES="${NOTES}## 🧹 Chores
 ${CHORES}
+
+"
+fi
+
+if [ -n "$REFACTORS" ]; then
+  NOTES="${NOTES}## ♻️ Refactors
+${REFACTORS}
 
 "
 fi

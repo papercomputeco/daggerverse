@@ -8,33 +8,12 @@ import (
 	"strings"
 )
 
-// validPRPrefixes defines the set of allowed PR title prefixes.
-var validPRPrefixes = []string{
-	// Literal emojis
-	"✨ feat: ",
-	"🔧 fix: ",
-	"🧹 chore: ",
-	"♻️ refactor: ",
-	"🎨 design: ",
-	"📚 docs: ",
-	"✏️ RFD: ",
-
-	// Colon based emoji derivatives
-	":sparkles: feat: ",
-	":wrench: fix: ",
-	":broom: chore: ",
-	":recycle: refactor: ",
-	":art: design: ",
-	":books: docs: ",
-	":pencil2: RFD: ",
-}
-
 // Linear's magic words compiled from:
 // https://linear.app/docs/github#link-through-pull-requests
 var linearMagicWordPattern = regexp.MustCompile(`(?i)\b(?:close|closes|closed|closing|closing fix|fix|fixes|fixed|fixing|resolve|resolves|resolved|resolving|complete|completes|completed|completing|implements|implemented|implementing|ref|refs|references|part of|related to|contributes to|toward|towards)\s+(?-i:(?:PCC|DES|REL|CTO)-[0-9]+)\b`)
 
 // CheckPullRequest validates that a pull request conforms to project standards.
-// It checks that the PR title starts with one of the required prefixes.
+// It checks that the PR title follows the required emoji conventional format.
 //
 // This is intended to be called from a GitHub Actions workflow where the
 // GitHub token and PR metadata are available.
@@ -105,26 +84,6 @@ func (m *Ghcontrib) CheckPullRequestLinearMagicWord(
 	}
 
 	return fmt.Sprintf("✅ PR #%d has a valid Linear magic word", number), nil
-}
-
-func validatePullRequestTitle(title string, number int) error {
-	for _, prefix := range validPRPrefixes {
-		if strings.HasPrefix(title, prefix) {
-			return nil
-		}
-	}
-
-	prefixList := make([]string, len(validPRPrefixes))
-	for i, p := range validPRPrefixes {
-		prefixList[i] = fmt.Sprintf("  - %q", p)
-	}
-
-	return fmt.Errorf(
-		"PR #%d title %q does not match any required prefix.\n\nTitle must start with one of:\n%s",
-		number,
-		title,
-		strings.Join(prefixList, "\n"),
-	)
 }
 
 func validatePullRequestLinearMagicWord(title, body string, number int) error {

@@ -17,6 +17,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = [
             pkgs.go_1_25
+            pkgs.gh
             pkgs.gotools
             pkgs.gnumake
             dagger.packages.${system}.dagger
@@ -29,4 +30,3 @@
       }
     );
 }
-

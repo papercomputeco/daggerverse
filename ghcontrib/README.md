@@ -3,21 +3,26 @@
 Various GitHub contribution utilities and standards conforming checks.
 
 Currently includes checks for:
-- required conventional PR title prefixes:
-  - `✨ feat: ` — new features
-  - `🔧 fix: ` — bug fixes
-  - `🧹 chore: ` — maintenance tasks
-  - `♻️ refactor: ` — refactors
-  - `🎨 design: ` — design and UX updates
-  - `📚 docs: ` — documentation updates
-  - `✏️ RFD: ` — requests for discussion
+- required conventional PR title format:
+  - `<emoji> <type>: <description>`
+  - `<emoji> <type>(scope): <description>`
+  - `<emoji> <type>!: <description>`
+  - `<emoji> <type>(scope)!: <description>`
+- allowed emoji/type pairs:
+  - `✨ feat` / `:sparkles: feat` — new features
+  - `🔧 fix` / `:wrench: fix` — bug fixes
+  - `🧹 chore` / `:broom: chore` — maintenance tasks
+  - `♻️ refactor` / `:recycle: refactor` — refactors
+  - `🎨 design` / `:art: design` — design and UX updates
+  - `📚 docs` / `:books: docs` — documentation updates
+  - `✏️ RFD` / `:pencil2: RFD` — requests for discussion
 - Linear magic-word references in the PR title or body, e.g. `fixes PCC-123` or `related to DES-456`.
   Must include a supported Paper Compute Co. Linear team.
 
 
 | Function | Description |
 |----------|-------------|
-| `check-pull-request` | Fetches a PR via `gh pr view` and validates that its title starts with a required prefix. Fails the pipeline if the PR is non-conforming. |
+| `check-pull-request` | Fetches a PR via `gh pr view` and validates that its title follows the required conventional title format. Fails the pipeline if the PR is non-conforming. |
 | `check-pull-request-linear-magic-word` | Fetches a PR via `gh pr view` and validates only the Linear magic-word reference. |
 
 

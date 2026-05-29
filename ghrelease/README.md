@@ -2,6 +2,18 @@
 
 GitHub release management.
 
+Create inspects commit subjects since the latest `v*` tag to choose the next
+semantic version and generate release notes. Scoped conventional subjects are
+classified the same as their unscoped form:
+
+| Commit subject | Release behavior |
+|----------------|------------------|
+| `✨ feat: ...` or `✨ feat(scope): ...` | Minor bump, Features section |
+| `🔧 fix: ...` or `🔧 fix(scope): ...` | Patch bump, Fixes section |
+| `🧹 chore: ...` or `🧹 chore(scope): ...` | Patch bump, Chores section |
+| `♻️ refactor: ...` or `♻️ refactor(scope): ...` | Patch bump, Refactors section |
+| `feat!: ...`, `fix!: ...`, `chore!: ...`, or `refactor!: ...` | Major bump, Breaking Changes section |
+
 Upload takes a directory of build artifacts to a release.
 Artifacts can optionally be flattened from an
 `<os>/<arch>/<filename>` layout into a flat directory with files renamed
