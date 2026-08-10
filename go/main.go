@@ -63,6 +63,6 @@ func (g *Go) CheckGoModTidy(ctx context.Context) (string, error) {
 // +check
 func (g *Go) CheckGoVet(ctx context.Context) (string, error) {
 	return g.goContainer().
-		WithExec([]string{"go", "vet"}).
+		WithExec([]string{"go", "vet", "./..."}).
 		Stdout(ctx)
 }
