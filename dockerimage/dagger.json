@@ -1,0 +1,7 @@
+{
+  "name": "dockerimage",
+  "engineVersion": "v0.21.7",
+  "sdk": {
+    "source": "go"
+  }
+}
