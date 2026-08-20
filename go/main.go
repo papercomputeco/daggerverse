@@ -101,3 +101,27 @@ func (g *Go) CheckGoVet(ctx context.Context) (string, error) {
 		WithExec([]string{"go", "vet", "./..."}).
 		Stdout(ctx)
 }
+
+// CheckGoTest runs "go test" against the Source directory and the root Go mod.
+//
+// It runs in the container rather than being left to each consumer's CI
+// because a suite executed through a Nix shell writes its test binary under
+// that shell's TMPDIR, and a binary that is not there at exec time fails as
+// "fork/exec ...: no such file or directory" — a failure about the
+// environment that reads like a failure about the code.
+//
+// -count=1 disables the test cache: a check that can be satisfied by a
+// previous run's cached result is not running the thing it reports on. The
+// mounted build cache keeps compilation incremental regardless.
+//
+// +check
+func (g *Go) CheckGoTest(ctx context.Context) (string, error) {
+	ctr, err := g.goContainer()
+	if err != nil {
+		return "", fmt.Errorf("could not create go container: %w", err)
+	}
+
+	return ctr.
+		WithExec([]string{"go", "test", "-count=1", "./..."}).
+		Stdout(ctx)
+}
