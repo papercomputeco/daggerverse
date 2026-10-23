@@ -37,7 +37,7 @@ func New(
 
 func (g *Go) goContainer() (*dagger.Container, error) {
 	ctr := dag.Container().
-		From("golang:1.26-bookworm").
+		From("golang:1.27-bookworm").
 		WithMountedCache("/go/pkg/mod", dag.CacheVolume("go-mod")).
 		WithMountedCache("/root/.cache/go-build", dag.CacheVolume("go-build")).
 		WithWorkdir("/src").

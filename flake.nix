@@ -16,7 +16,7 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pkgs.go_1_25
+            pkgs.go_1_27
             pkgs.gh
             pkgs.gotools
             pkgs.gnumake

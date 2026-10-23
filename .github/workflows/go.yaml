@@ -31,3 +31,8 @@ jobs:
         run: nix develop --command make -C go test
         env:
           DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+
+      - name: Test golangci-lint module
+        run: nix develop --command make -C golangcilint test
+        env:
+          DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
